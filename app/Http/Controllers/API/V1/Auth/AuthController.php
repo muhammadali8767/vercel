@@ -18,10 +18,9 @@ class AuthController extends BaseController
             $authUser->tokens()->delete();
 
             $roleUser = Role::firstOrCreate(['guard_name' => 'api', 'name' => 'user']);
-            $roleAdmin = Role::firstOrCreate(['guard_name' => 'api', 'name' => 'admin']);
 
-            if (!$authUser->hasRole($roleAdmin)) {
-                $authUser->assignRole($roleAdmin);
+            if (!$authUser->hasRole($roleUser)) {
+                $authUser->assignRole($roleUser);
             }
 
             $success['token'] =  $authUser->createToken($authUser->name)->plainTextToken;
