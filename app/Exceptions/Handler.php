@@ -50,7 +50,8 @@ class Handler extends ExceptionHandler
                     'message' => $e->getMessage(),
 
                     // 'message' => 'Record not found.'
-                ], $e->getStatusCode());
+                ], 500);
+                //$e->getStatusCode()
             }
         });
         $this->reportable(function (Throwable $e) {
