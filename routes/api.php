@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 
 use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Admin\QuestionController;
+use App\Http\Controllers\API\V1\Admin\LevelController as AdminLevelController;
+use App\Http\Controllers\API\V1\Admin\ThemeController as AdminThemeController;
 
 use App\Http\Controllers\API\V1\User\ExamController;
 use App\Http\Controllers\API\V1\User\LevelController;
@@ -30,11 +32,11 @@ Route::prefix('v1')->group(function () {
         // Admin Routes
         Route::group(['middleware' => ['role:admin'], 'prefix' => 'admin'], function () {
 
-            Route::resource('questions', QuestionController::class)->except('create', 'edit');
+            Route::resource('questions', QuestionController::class)->except('create', 'edit', 'show');
 
-            Route::resource('questions', QuestionController::class)->except('create', 'edit');
+            Route::resource('themes', AdminThemeController::class)->except('create', 'edit', 'show');
 
-            Route::resource('questions', QuestionController::class)->except('create', 'edit');
+            Route::resource('levels', AdminLevelController::class)->except('create', 'edit', 'show');
 
         });
 
