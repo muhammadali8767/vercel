@@ -154,7 +154,7 @@ class ExamController extends BaseController
         $now = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
         $exam = Exam::with('questions', 'theme', 'level')->where('user_id', Auth::id())->find($exam_id);
 
-        if ($exam->exists()) {
+        if ($exam) {
             if($exam->expire_time > $now) {
                 return $this->sendError('Exam is not completed yet', null, 403);
             }
