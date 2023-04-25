@@ -89,7 +89,6 @@ class ExamController extends BaseController
                 ->exists()
             ) {
             $question = Question::find($request->question_id);
-            dd($question->correct, $request->answer, $question->correct == $request->answer);
             $userAnswer = UserAnswer::where('exam_id', $request->exam_id)
             ->where('question_id', $request->question_id)->first();
             $userAnswer->answer = $request->answer;
