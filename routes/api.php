@@ -58,13 +58,14 @@ Route::prefix('v1')->group(function () {
 
                 Route::post('start-exam', [ScoreController::class, 'startExam']);
 
-                //                Route::post('start-exam', [ExamController::class, 'startExam']);
+//                                Route::post('start-exam', [ExamController::class, 'startExam']);
 
                 Route::post('set-answer', [ExamController::class, 'setAnswer']);
 
                 Route::post('complete-exam/{exam_id}', [ExamController::class, 'completeExam']);
 
-                Route::get('get-user-exams', [ExamController::class, 'getUserExams']);
+//                Route::get('get-user-exams', [ExamController::class, 'getUserExams']);
+                Route::get('get-user-exams', [ScoreController::class, 'getUserExams']);
 
                 Route::get('get-exam-result/{exam_id}', [ExamController::class, 'getExamResult']);
 

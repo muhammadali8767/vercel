@@ -127,6 +127,7 @@ class DatabaseSeeder extends Seeder
                 if ($examEnds)
                     break;
             }
+            $score->status = 'completed';
             $score->expire_time = date('Y-m-d H:i:s', $startDate);
             $score->duration_in_seconds = strtotime($score->expire_time) - strtotime($score->start_time);
             $score->level_id = $i;

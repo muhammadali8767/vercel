@@ -14,6 +14,9 @@ class Score extends Model
         return $this->belongsTo(User::class)->select('id', 'name');
     }
 
+    public function theme () {
+        return $this->belongsTo(Theme::class)->select('id', 'name');
+    }
     public function exams () {
         return $this->hasMany(Exam::class)->orderBy('id');
     }
