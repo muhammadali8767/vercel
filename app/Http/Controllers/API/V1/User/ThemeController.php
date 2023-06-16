@@ -11,6 +11,6 @@ class ThemeController extends BaseController
     {
         $themes = Theme::paginate(10);
 
-        return $this->sendResponse($themes, 'Themes!');
+        return $this->sendResponse($themes);
     }
 }

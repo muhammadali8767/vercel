@@ -6,7 +6,9 @@ use App\Http\Controllers\API\V1\Auth\AuthController;
 use App\Http\Controllers\API\V1\Admin\QuestionController;
 use App\Http\Controllers\API\V1\Admin\LevelController as AdminLevelController;
 use App\Http\Controllers\API\V1\Admin\ThemeController as AdminThemeController;
-
+use App\Http\Controllers\API\V1\Admin\ScoreController as AdminScoreController;
+use App\Http\Controllers\API\V1\Admin\KeyWordController;
+use App\Http\Controllers\API\V1\User\ScoreController;
 use App\Http\Controllers\API\V1\User\ExamController;
 use App\Http\Controllers\API\V1\User\LevelController;
 use App\Http\Controllers\API\V1\User\ThemeController;
@@ -32,32 +34,31 @@ Route::prefix('v1')->group(function () {
         // Admin Routes
         Route::group(['middleware' => ['role:admin'], 'prefix' => 'admin'], function () {
 
-            Route::resource('questions', QuestionController::class)->except('create', 'edit', 'show');
+            Route::resource('keywords', KeyWordController::class)->only('index');
 
-            Route::resource('themes', AdminThemeController::class)->except('create', 'edit', 'show');
+            Route::resource('questions', QuestionController::class)->except('create', 'edit');
 
-            Route::resource('levels', AdminLevelController::class)->except('create', 'edit', 'show');
+            Route::resource('themes', AdminThemeController::class)->except('create', 'edit');
 
+            Route::resource('levels', AdminLevelController::class)->except('create', 'edit');
+
+            Route::resource('scores', AdminScoreController::class)->only('index', 'show');
         });
 
         // User Routes
         Route::group(['middleware' => ['role:user']], function () {
 
-            Route::group(['prefix' => 'theme'], function () {
+            Route::resource('scores', ScoreController::class)->only('index', 'show');
 
-                Route::get('get-themes', [ThemeController::class, 'getThemes']);
+            Route::get('theme/get-themes', [ThemeController::class, 'getThemes']);
 
-            });
-
-            Route::group(['prefix' => 'level'], function () {
-
-                Route::get('get-levels', [LevelController::class, 'getLevels']);
-
-            });
+            Route::get('level/get-levels', [LevelController::class, 'getLevels']);
 
             Route::group(['prefix' => 'exam'], function () {
 
-                Route::post('start-exam', [ExamController::class, 'startExam']);
+                Route::post('start-exam', [ScoreController::class, 'startExam']);
+
+                //                Route::post('start-exam', [ExamController::class, 'startExam']);
 
                 Route::post('set-answer', [ExamController::class, 'setAnswer']);
 

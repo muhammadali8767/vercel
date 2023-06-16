@@ -13,19 +13,21 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('exams', function (Blueprint $table) {
+        Schema::create('scores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('level_id');
-            $table->foreignId('score_id');
-            $table->timestamp('start_time')->nullable();
-            $table->timestamp('expire_time')->nullable();
+            $table->foreignId('user_id');
+            $table->foreignId('theme_id');
+            $table->foreignId('level_id')->default(0);
+            $table->timestamp('start_time');
+            $table->timestamp('expire_time');
             $table->bigInteger('duration_in_seconds')->default(0);
             $table->integer('correct_answers')->default(0);
             $table->integer('keys_count')->default(0);
             $table->integer('used_keys')->default(0);
-            $table->timestamps();
+            $table->integer('not_used_keys')->default(0);
             $table->enum('status', ['active', 'completed'])->default('active');
 
+            $table->timestamps();
         });
     }
 
@@ -36,6 +38,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('exams');
+        Schema::dropIfExists('scores');
     }
 };

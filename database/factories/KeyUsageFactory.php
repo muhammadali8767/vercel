@@ -6,9 +6,9 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Theme>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\KeyUsage>
  */
-class ThemeFactory extends Factory
+class KeyUsageFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -18,7 +18,7 @@ class ThemeFactory extends Factory
     public function definition()
     {
         return [
-            'name' => fake()->name(),
+            'usage_type' => fake()->name(),
         ];
     }
 }

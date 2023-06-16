@@ -16,11 +16,14 @@ return new class extends Migration
         Schema::create('questions', function (Blueprint $table) {
             $table->id();
             $table->text('question');
+            $table->text('hint_for_the_question');
             $table->text('a');
             $table->text('b');
             $table->text('c');
             $table->text('d');
             $table->enum('correct', ['a', 'b', 'c', 'd']);
+            $table->boolean('has_image')->default(false);
+            $table->string('image')->nullable();
             $table->foreignId('theme_id');
             $table->foreignId('level_id');
             $table->timestamps();

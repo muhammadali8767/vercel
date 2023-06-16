@@ -13,11 +13,9 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('levels', function (Blueprint $table) {
+        Schema::create('key_words', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->integer('simple_question_count')->default(0);
-            $table->integer('has_image_count')->default(0);
+            $table->string('key_word');
             $table->timestamps();
         });
     }
@@ -29,6 +27,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('levels');
+        Schema::dropIfExists('key_words');
     }
 };

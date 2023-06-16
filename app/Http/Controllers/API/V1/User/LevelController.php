@@ -11,6 +11,6 @@ class LevelController extends BaseController
     {
         $levels = Level::paginate(10);
 
-        return $this->sendResponse($levels, 'Levels!');
+        return $this->sendResponse($levels);
     }
 }

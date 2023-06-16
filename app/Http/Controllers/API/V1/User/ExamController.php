@@ -7,7 +7,8 @@ use App\Enums\IsCorrectEnum;
 use App\Http\Controllers\API\V1\BaseController;
 use App\Models\Exam;
 use App\Models\Question;
-use App\Models\UserAnswer;
+use App\Models\ExamQuestion;
+use App\Models\Score;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -17,7 +18,59 @@ use Illuminate\Validation\Rule;
 
 class ExamController extends BaseController
 {
+
     public function startExam(Request $request)
+    {
+        $validator = Validator::make($request->all(), [
+            'theme_id' => 'required|numeric|exists:themes,id',
+            'level_id' => 'required|numeric|exists:levels,id',
+        ]);
+
+        if($validator->fails()){
+            return $this->sendError($validator->errors());
+        }
+        dd($request->all());
+
+        $user_id = Auth::id();
+        $now = Carbon::now()->setTimezone('Asia/Tashkent');
+
+        $score = Score::with('questions', 'theme', 'level')
+            ->where('user_id', $user_id)
+            ->where('theme_id', $request->theme_id)
+            ->where('level_id', $request->level_id)
+            ->where('expire_time', '>', $now->format('Y-m-d H:i:s'))
+            ->first();
+
+        if ($score) {
+            return $this->sendResponse($exam, 'Your exam is not completed yet!');
+        } else {
+
+            $exam = Exam::create([
+                'user_id' => $user_id,
+                'theme_id' => $request->theme_id,
+                'level_id' => $request->level_id,
+                'start_time' => $now->format('Y-m-d H:i:s'),
+                'expire_time' => $now->addMinutes(30)->format('Y-m-d H:i:s'),
+            ]);
+
+            $questions = Question::where('theme_id', $request->theme_id)
+                ->where('level_id', $request->level_id)
+                ->inRandomOrder()
+                ->limit(10)
+                ->get();
+
+            foreach ($questions as $question) {
+                ExamQuestion::create([
+                    'exam_id' => $exam->id,
+                    'question_id' => $question->id,
+                ]);
+            }
+
+            return $this->sendResponse($exam->load('questions', 'theme', 'level'), 'Exam is started!');
+        }
+    }
+
+    public function startExamOld(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'theme_id' => 'required|numeric|exists:themes,id',
@@ -31,7 +84,7 @@ class ExamController extends BaseController
         $user_id = Auth::id();
         $now = Carbon::now()->setTimezone('Asia/Tashkent');
 
-        $exam = Exam::with('questionsWithoutCorrect', 'theme', 'level')
+        $exam = Exam::with('questions', 'theme', 'level')
             ->where('user_id', $user_id)
             ->where('theme_id', $request->theme_id)
             ->where('level_id', $request->level_id)
@@ -57,13 +110,13 @@ class ExamController extends BaseController
                 ->get();
 
             foreach ($questions as $question) {
-                UserAnswer::create([
+                ExamQuestion::create([
                     'exam_id' => $exam->id,
                     'question_id' => $question->id,
                 ]);
             }
 
-            return $this->sendResponse($exam->load('questionsWithoutCorrect', 'theme', 'level'), 'Exam is started!');
+            return $this->sendResponse($exam->load('questions', 'theme', 'level'), 'Exam is started!');
         }
     }
 
@@ -89,7 +142,7 @@ class ExamController extends BaseController
                 ->exists()
             ) {
             $question = Question::find($request->question_id);
-            $userAnswer = UserAnswer::where('exam_id', $request->exam_id)
+            $userAnswer = ExamQuestion::where('exam_id', $request->exam_id)
             ->where('question_id', $request->question_id)->first();
             $userAnswer->answer = $request->answer;
             $userAnswer->is_correct = ($question->correct == $request->answer) ? 1 : 0;
@@ -117,7 +170,7 @@ class ExamController extends BaseController
         if($exam) {
             $exam->status = ExamStatusEnum::COMPLETED;
             $exam->expire_time = $now;
-            $exam->correct_answers = UserAnswer::where('exam_id', $exam_id)->where('is_correct', IsCorrectEnum::CORRECT)->count();
+            $exam->correct_answers = ExamQuestion::where('exam_id', $exam_id)->where('is_correct', IsCorrectEnum::CORRECT)->count();
             $exam->save();
 
             return $this->sendResponse($exam, 'Exam is completed');
@@ -137,7 +190,7 @@ class ExamController extends BaseController
                 return $exam;
             });
 
-            return $this->sendResponse($exams, 'Exam list');
+            return $this->sendResponse($exams);
         }
 
         return $this->sendError('Exam is not found!');

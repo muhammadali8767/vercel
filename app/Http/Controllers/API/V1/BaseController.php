@@ -12,7 +12,7 @@ class BaseController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function sendResponse($result, $message)
+    public function sendResponse($result, $message = 'success')
     {
         if(is_array($result) && array_key_exists('data', $result)) {
             $result['success'] = true;

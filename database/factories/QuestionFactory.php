@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
 /**
- * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\User>
+ * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Question>
  */
 class QuestionFactory extends Factory
 {
@@ -21,8 +21,12 @@ class QuestionFactory extends Factory
      */
     public function definition()
     {
+        $hasImage = random_int(0, 1);
         return [
             'question' => fake()->text(),
+            'hint_for_the_question' => fake()->text(),
+            'has_image' => $hasImage,
+            'image' => $hasImage == 1 ?  'images/question.jpg' : '',
             'a' => fake()->text(),
             'b' => fake()->text(),
             'c' => fake()->text(),

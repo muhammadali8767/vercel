@@ -13,12 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('user_answers', function (Blueprint $table) {
+        Schema::create('question_key_words', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('exam_id');
+            $table->foreignId('key_word_id');
             $table->foreignId('question_id');
-            $table->enum('answer', ['a', 'b', 'c', 'd'])->nullable();
-            $table->tinyInteger('is_correct')->default(0);
             $table->timestamps();
         });
     }
@@ -30,6 +28,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('user_answers');
+        Schema::dropIfExists('question_key_words');
     }
 };

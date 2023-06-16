@@ -9,4 +9,9 @@ class Question extends Model
 {
     use HasFactory;
     protected $guarded = [];
+
+    public function keyWords () {
+        return $this->belongsToMany(KeyWord::class, 'question_key_words')
+            ->select('key_word');
+    }
 }
