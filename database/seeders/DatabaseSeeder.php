@@ -164,7 +164,7 @@ class DatabaseSeeder extends Seeder
         }
 
         $start_time = $examEnds == 0 ? date('Y-m-d H:i:s', $startDate) : null;
-        $end_time = $examEnds == 0 ? date('Y-m-d H:i:s', $startDate + $defaultQuestionTime) : null;
+        $expire_time = $examEnds == 0 ? date('Y-m-d H:i:s', $startDate + $defaultQuestionTime) : null;
         $answer_time = $examEnds == 0 ? date('Y-m-d H:i:s', $startDate + $userAnswerInSeconds) : null;
 
         ExamQuestion::factory()->create([
@@ -174,7 +174,7 @@ class DatabaseSeeder extends Seeder
             'is_correct' => $examEnds == 0 ? $is_correct : 0,
             'key_usage' => $key_usage,
             'start_time' => $start_time,
-            'end_time' => $end_time,
+            'expire_time' => $expire_time,
             'answer_time' => $answer_time,
         ]);
 

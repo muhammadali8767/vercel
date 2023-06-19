@@ -18,8 +18,8 @@ return new class extends Migration
             $table->foreignId('user_id');
             $table->foreignId('theme_id');
             $table->foreignId('level_id')->default(0);
-            $table->timestamp('start_time');
-            $table->timestamp('expire_time');
+            $table->timestamp('start_time')->nullable();
+            $table->timestamp('expire_time')->nullable();
             $table->bigInteger('duration_in_seconds')->default(0);
             $table->integer('correct_answers')->default(0);
             $table->integer('keys_count')->default(0);

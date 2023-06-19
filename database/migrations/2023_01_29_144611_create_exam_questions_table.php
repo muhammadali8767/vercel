@@ -21,7 +21,7 @@ return new class extends Migration
             $table->enum('answer', ['a', 'b', 'c', 'd', null])->nullable();
             $table->tinyInteger('is_correct')->default(0);
             $table->timestamp('start_time')->nullable();
-            $table->timestamp('end_time')->nullable();
+            $table->timestamp('expire_time')->nullable();
             $table->timestamp('answer_time')->nullable();
             $table->timestamps();
         });
