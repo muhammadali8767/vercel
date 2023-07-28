@@ -60,6 +60,8 @@ Route::prefix('v1')->group(function () {
 
 //                Route::post('start-exam', [ExamController::class, 'startExam']);
 
+                Route::post('get-next-question', [ScoreController::class, 'getNextQuestion']);
+
                 Route::post('set-answer', [ExamController::class, 'setAnswer']);
 
                 Route::post('complete-exam/{exam_id}', [ExamController::class, 'completeExam']);

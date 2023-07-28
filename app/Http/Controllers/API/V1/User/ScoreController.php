@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\API\V1\User;
 
+use App\Enums\ExamStatusEnum;
 use App\Http\Controllers\API\V1\BaseController;
 use App\Models\Exam;
 use App\Models\ExamQuestion;
@@ -21,7 +22,6 @@ class ScoreController extends BaseController
     protected $extraTime = 30;
     public function index()
     {
-
         $scores = Score::with('user','theme')
             ->withCount('exams')
             ->where('user_id', Auth::id())
@@ -29,7 +29,12 @@ class ScoreController extends BaseController
             ->orderBy('keys_count', 'desc')
             ->orderBy('not_used_keys', 'desc')
             ->orderBy('level_id', 'desc')
-            ->paginate(10);
+            ->paginate(10)->transform(function ($item) {
+                if ($item->expire_time <= now()->format('Y-m-d H:i:s'))
+                    $item->status = ExamStatusEnum::COMPLETED;
+
+                return $item;
+            });
 
         return $this->sendResponse($scores);
     }
@@ -56,14 +61,16 @@ class ScoreController extends BaseController
 
         $user_id = Auth::id();
 
-        $score = Score::with('user', 'theme')
-            ->where('user_id', $user_id)
+        $score = Score::where('user_id', $user_id)
             ->where('status', 'active')
             ->where('theme_id', $request->theme_id)
-            ->first();
+            ->exists();
 
         if ($score)
-            return $this->sendResponse($score);
+            Score::where('user_id', $user_id)
+                ->where('status', 'active')
+                ->where('theme_id', $request->theme_id)
+                ->update(['status' => ExamStatusEnum::COMPLETED]);
 
         $startTime = Carbon::now();
         $score = Score::create([
@@ -80,37 +87,68 @@ class ScoreController extends BaseController
         return $this->sendResponse($score);
     }
 
+    public function getNextQuestion (Request $request) {
+        $validator = Validator::make($request->all(), [
+            'score_id' => 'required|numeric|exists:scores,id',
+            'question_id' => 'sometimes|numeric|exists:questions,id',
+        ]);
+ 
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors());
+        }
 
-//    public function setAnswer(Request $request) {
-//        $validator = Validator::make($request->all(), [
-//            'score_id' => 'required|numeric|exists:scores,id',
-//            'question_id' => 'required|numeric|exists:questions,id',
-//        ]);
-//
-//        if ($validator->fails()) {
-//            return $this->sendError($validator->errors());
-//        }
-//
-//        $score = Score::find($request->score_id);
-//
-//        if ($score->user_id != Auth::id())
-//            return $this->sendError('Forbidden', 403);
-//
-//        if (strtotime($score->expire_time) >= now() || $score->status != 'active')
-//            return $this->sendError('Imtihon yakunlandi', 403);
-//
-//        $exams = Exam::where('score_id', $score->id)->pluck('id')->toArray();
-//        $examQuestion = ExamQuestion::whereIn('exam_id', $exams)
-//            ->where('question_id', $request->question_id)
-//            ->whereDate('expire_time', '<=', now())
-//            ->first();
-//
-//        if ($examQuestion)
-//            return $this->sendError('Question not found', 422);
-//
-//
-//    }
-    private function createExams($score) {
+        $score = Score::find($request->score_id);
+
+        if ($score->user_id != Auth::id())
+            return $this->sendError('Forbidden', 403);
+ 
+        // if (strtotime($score->expire_time) >= now() || $score->status != 'active')
+        //     return $this->sendError('Imtihon yakunlandi', 403);
+ 
+        $exams = Exam::where('score_id', $score->id)->pluck('id')->toArray();
+        $examQuestion = ExamQuestion::whereIn('exam_id', $exams)->with('question')
+            // ->where('question_id', $request->question_id)
+            // ->whereDate('expire_time', '<=', now())
+            ->orderBy('id')
+            ->get();
+ 
+        return $this->sendResponse($examQuestion);
+
+        if ($examQuestion)
+            return $this->sendError('Question not found', 422);
+  
+ 
+    }
+
+   public function setAnswer(Request $request) {
+       $validator = Validator::make($request->all(), [
+           'score_id' => 'required|numeric|exists:scores,id',
+           'question_id' => 'required|numeric|exists:questions,id',
+       ]);
+
+       if ($validator->fails()) {
+           return $this->sendError($validator->errors());
+       }
+
+       $score = Score::find($request->score_id);
+
+       if ($score->user_id != Auth::id())
+           return $this->sendError('Forbidden', 403);
+
+       if (strtotime($score->expire_time) >= now() || $score->status != 'active')
+           return $this->sendError('Imtihon yakunlandi', 403);
+
+       $exams = Exam::where('score_id', $score->id)->pluck('id')->toArray();
+       $examQuestion = ExamQuestion::whereIn('exam_id', $exams)
+           ->where('question_id', $request->question_id)
+           ->whereDate('expire_time', '<=', now())
+           ->first();
+
+       if ($examQuestion)
+           return $this->sendError('Question not found', 422);
+   }
+
+   private function createExams($score) {
         $levels = Level::all();
         $startDate = strtotime($score->start_time);
         foreach ($levels as $level) {
