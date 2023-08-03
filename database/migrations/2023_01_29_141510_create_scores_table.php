@@ -15,9 +15,9 @@ return new class extends Migration
     {
         Schema::create('scores', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id');
-            $table->foreignId('theme_id');
-            $table->foreignId('level_id')->default(0);
+            $table->foreignId('user_id')->constrained('users');
+            $table->foreignId('theme_id')->constrained('themes');
+            $table->foreignId('level_id')->constrained('levels')->default(0);
             $table->timestamp('start_time')->nullable();
             $table->timestamp('expire_time')->nullable();
             $table->bigInteger('duration_in_seconds')->default(0);

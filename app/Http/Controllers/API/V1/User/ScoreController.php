@@ -77,7 +77,7 @@ class ScoreController extends BaseController
             'user_id' => $user_id,
             'theme_id' => $request->theme_id,
             'start_time' => $startTime->format('Y-m-d H:i:s'),
-//            'expire_time' => $startTime->addMinutes(15)->format('Y-m-d H:i:s'),
+            // 'expire_time' => $startTime->addMinutes(15)->format('Y-m-d H:i:s'),
         ]);
 
         $this->createExams($score);
@@ -87,12 +87,27 @@ class ScoreController extends BaseController
         return $this->sendResponse($score);
     }
 
+    public function getQuestionList(Request $request) {
+        $validator = Validator::make($request->all(), [
+            'score_id' => 'required|numeric|exists:scores,id',
+        ]);
+
+        if ($validator->fails()) {
+            return $this->sendError($validator->errors());
+        }
+
+        $scre = Score::with('questions')->find($request->score_id);
+
+        return $this->sendResponse($scre);
+
+    }
+
     public function getNextQuestion (Request $request) {
         $validator = Validator::make($request->all(), [
             'score_id' => 'required|numeric|exists:scores,id',
             'question_id' => 'sometimes|numeric|exists:questions,id',
         ]);
- 
+
         if ($validator->fails()) {
             return $this->sendError($validator->errors());
         }
@@ -101,23 +116,23 @@ class ScoreController extends BaseController
 
         if ($score->user_id != Auth::id())
             return $this->sendError('Forbidden', 403);
- 
-        // if (strtotime($score->expire_time) >= now() || $score->status != 'active')
-        //     return $this->sendError('Imtihon yakunlandi', 403);
- 
+
+        if (strtotime($score->expire_time) >= now() || $score->status != 'active')
+            return $this->sendError('Imtihon yakunlandi', 403);
+
         $exams = Exam::where('score_id', $score->id)->pluck('id')->toArray();
         $examQuestion = ExamQuestion::whereIn('exam_id', $exams)->with('question')
             // ->where('question_id', $request->question_id)
             // ->whereDate('expire_time', '<=', now())
             ->orderBy('id')
             ->get();
- 
+
         return $this->sendResponse($examQuestion);
 
         if ($examQuestion)
             return $this->sendError('Question not found', 422);
-  
- 
+
+
     }
 
    public function setAnswer(Request $request) {

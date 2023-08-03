@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('exams', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('level_id');
-            $table->foreignId('score_id');
+            $table->foreignId('level_id')->constrained('levels');
+            $table->foreignId('score_id')->constrained('scores');
             $table->timestamp('start_time')->nullable();
             $table->timestamp('expire_time')->nullable();
             $table->bigInteger('duration_in_seconds')->default(0);

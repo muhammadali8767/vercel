@@ -15,9 +15,10 @@ return new class extends Migration
     {
         Schema::create('exam_questions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('exam_id');
-            $table->foreignId('question_id');
-            $table->foreignId('key_usage')->default(0);
+            $table->foreignId('score_id')->constrained('scores');
+            $table->foreignId('exam_id')->constrained('exams');
+            $table->foreignId('question_id')->constrained('questions');
+            $table->foreignId('key_usage')->constrained('key_usages')->default(0);
             $table->enum('answer', ['a', 'b', 'c', 'd', null])->nullable();
             $table->tinyInteger('is_correct')->default(0);
             $table->timestamp('start_time')->nullable();

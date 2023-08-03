@@ -58,7 +58,7 @@ Route::prefix('v1')->group(function () {
 
                 Route::post('start-exam', [ScoreController::class, 'startExam']);
 
-//                Route::post('start-exam', [ExamController::class, 'startExam']);
+               Route::post('get-question-list', [ScoreController::class, 'getQuestionList']);
 
                 Route::post('get-next-question', [ScoreController::class, 'getNextQuestion']);
 

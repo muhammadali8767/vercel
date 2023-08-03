@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('question_key_words', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('key_word_id');
-            $table->foreignId('question_id');
+            $table->foreignId('key_word_id')->constrained('key_words');
+            $table->foreignId('question_id')->constrained('questions');
             $table->timestamps();
         });
     }

@@ -24,8 +24,8 @@ return new class extends Migration
             $table->enum('correct', ['a', 'b', 'c', 'd']);
             $table->boolean('has_image')->default(false);
             $table->string('image')->nullable();
-            $table->foreignId('theme_id');
-            $table->foreignId('level_id');
+            $table->foreignId('theme_id')->constrained('themes');
+            $table->foreignId('level_id')->constrained('levels');
             $table->timestamps();
         });
     }
