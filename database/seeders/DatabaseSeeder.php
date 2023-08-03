@@ -66,9 +66,7 @@ class DatabaseSeeder extends Seeder
 
         User::factory(10)->create();
 
-        Score::factory(20)->create();
-
-        $this->createExams();
+        // $this->createExams();
 
     }
 
@@ -121,7 +119,7 @@ class DatabaseSeeder extends Seeder
                 $exam->status = 'completed';
                 $exam->expire_time = date('Y-m-d H:i:s', $startDate);
                 $exam->duration_in_seconds = strtotime($exam->expire_time) - strtotime($exam->start_time);
-//                $exam->not_used_keys = strtotime($exam->keys_count) - strtotime($exam->used_keys);
+                // $exam->not_used_keys = strtotime($exam->keys_count) - strtotime($exam->used_keys);
                 $exam->save();
 
                 if ($examEnds)
@@ -131,7 +129,7 @@ class DatabaseSeeder extends Seeder
             $score->expire_time = date('Y-m-d H:i:s', $startDate);
             $score->duration_in_seconds = strtotime($score->expire_time) - strtotime($score->start_time);
             $score->level_id = $i;
-//            $score->not_used_keys = strtotime($score->keys_count) - strtotime($score->used_keys);
+            // $score->not_used_keys = strtotime($score->keys_count) - strtotime($score->used_keys);
             $score->save();
         }
     }

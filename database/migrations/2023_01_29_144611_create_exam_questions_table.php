@@ -15,8 +15,8 @@ return new class extends Migration
     {
         Schema::create('exam_questions', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('score_id')->constrained('scores');
             $table->foreignId('exam_id')->constrained('exams');
+            $table->foreignId('level_id')->constrained('levels');
             $table->foreignId('question_id')->constrained('questions');
             $table->foreignId('key_usage')->constrained('key_usages')->default(0);
             $table->enum('answer', ['a', 'b', 'c', 'd', null])->nullable();

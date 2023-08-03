@@ -21,5 +21,15 @@ class ExamFactory extends Factory
      */
     public function definition()
     {
+        $user_id = User::all()->random()->id;
+        $theme_id = Theme::all()->random()->id;
+        $startTime = Carbon::parse(fake()->dateTimeBetween('-1 week', '-1 day'));
+
+        return [
+            'user_id' => $user_id,
+            'theme_id' => $theme_id,
+            'start_time' => $startTime->format('Y-m-d H:i:s'),
+            'expire_time' => $startTime->addMinutes(30)->format('Y-m-d H:i:s'),
+        ];
     }
 }
