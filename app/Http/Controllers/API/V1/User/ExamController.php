@@ -7,9 +7,9 @@ use App\Enums\IsCorrectEnum;
 use App\Http\Controllers\API\V1\BaseController;
 use App\Models\Exam;
 use App\Models\KeyWord;
+use App\Models\Level;
 use App\Models\Question;
 use App\Models\ExamQuestion;
-use App\Models\Score;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -19,6 +19,13 @@ use Illuminate\Validation\Rule;
 
 class ExamController extends BaseController
 {
+    protected $questionDuration = 60;
+    protected $extraTime = 30;
+    protected $currentTime;
+
+    public function __construct() {
+        $this->currentTime = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
+    }
 
     public function startExam(Request $request)
     {
@@ -31,87 +38,22 @@ class ExamController extends BaseController
         }
 
         $user_id = Auth::id();
-        $now = Carbon::now()->setTimezone('Asia/Tashkent');
 
-        // if ($score->status != 'active')
-        //     return $this->sendError('Imtihon yakunlandi', 422);
+        if (Exam::where('theme_id', $request->theme_id)
+            ->where('expire_time', '>', $this->currentTime)
+            ->exists())
+            return $this->sendError('Your exam is not completed yet!', 422);
 
-        // if ($score->user_id != $user_id)
-        //     return $this->sendError('Forbidden', 403);
+        $exam = Exam::create([
+            'user_id' => $user_id,
+            'theme_id' => $request->theme_id,
+            'start_time' => $this->currentTime,
+        ]);
 
-        // check level exists
-        // if ($score->user_id != $user_id)
-        //     return $this->sendError('Forbidden', 403);
+        $this->setExamQuestions($exam);
 
-        $exam = Exam::where('score_id', $request->score_id)
-            ->where('level_id', $request->level_id)
-            ->where('expire_time', '>', $now->format('Y-m-d H:i:s'))
-            ->exists();
-
-        if ($exam) {
-            return $this->sendResponse($exam, 'Your exam is not completed yet!');
-        } else {
-            $exam = Exam::create([
-                'user_id' => $user_id,
-                'start_time' => $now->format('Y-m-d H:i:s'),
-                // 'expire_time' => $now->addMinutes(30)->format('Y-m-d H:i:s'),
-            ]);
-
-            $this->setExamQuestions($exam);
-
-            return $this->sendResponse($exam->load('questions', 'score', 'level'), 'Exam is started!');
-        }
+        return $this->sendResponse($exam->load('questions', 'theme'), 'Exam is started!');
     }
-
-    // public function startExamOld(Request $request)
-    // {
-    //     $validator = Validator::make($request->all(), [
-    //         'theme_id' => 'required|numeric|exists:themes,id',
-    //     ]);
-
-    //     if($validator->fails()){
-    //         return $this->sendError($validator->errors());
-    //     }
-
-    //     $user_id = Auth::id();
-    //     $now = Carbon::now()->setTimezone('Asia/Tashkent');
-
-    //     $exam = Exam::with('questions', 'theme', 'level')
-    //         ->where('user_id', $user_id)
-    //         ->where('theme_id', $request->theme_id)
-    //         ->where('expire_time', '>', $now->format('Y-m-d H:i:s'))
-    //         ->first();
-
-    //     if ($exam) {
-    //         return $this->sendResponse($exam, 'Your exam is not completed yet!');
-    //     }
-
-    //     $exam = Exam::create([
-    //         'user_id' => $user_id,
-    //         'theme_id' => $request->theme_id,
-    //         'start_time' => $now->format('Y-m-d H:i:s'),
-    //         'expire_time' => $now->addMinutes(30)->format('Y-m-d H:i:s'),
-    //     ]);
-    //     $levels = Level::all();
-
-    //     foreach ($levels as $level) {
-    //         $questions = Question::where('theme_id', $request->theme_id)
-    //         ->where('level_id', $request->level_id)
-    //         ->inRandomOrder()
-    //         ->limit(10)
-    //         ->get();
-
-    //         foreach ($questions as $question) {
-    //             ExamQuestion::create([
-    //                 'exam_id' => $exam->id,
-    //                 'question_id' => $question->id,
-    //             ]);
-    //         }
-    //    }
-
-
-    //     return $this->sendResponse($exam->load('questions', 'theme', 'level'), 'Exam is started!');
-    // }
 
     public function setAnswer(Request $request)
     {
@@ -128,61 +70,62 @@ class ExamController extends BaseController
         }
 
         $user_id = Auth::id();
+        $exam = Exam::where('user_id', $user_id)
+            ->where('id', $request->exam_id)
+            ->first();
 
-        $now = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
+        if (!$exam)
+            return $this->sendError('Exam not found!', null, 422);
 
-        if (Exam::where('expire_time', '>', $now)
-                ->where('user_id', $user_id)
-                ->where('id', $request->exam_id)
-                ->exists()
-        ) {
-            $question = Question::find($request->question_id);
-            $examQuestion = ExamQuestion::where('exam_id', $request->exam_id)
-                ->where('question_id', $request->question_id)
-                ->first();
-            $examQuestion->answer = $request->answer;
-            $examQuestion->is_correct = ($question->correct == $request->answer) ? 1 : 0;
-
-            if ($examQuestion->save()) {
-                return $this->sendResponse([
-                    'exam_id' => $request->exam_id,
-                    'question_id' => $request->question_id,
-                    'answer' => $request->answer,
-                ], 'Your answer!');
-            }
-
-            return $this->sendError('Unable to record your answer!', null, 403);
+        if ($exam->expire_time <= $this->currentTime) {
+            $this->calcExamResult($exam);
+            return $this->sendError('Exam allready completed!', null, 403);
         }
 
-        return $this->sendError('Exam allready completed!', null, 403);
+        $question = Question::find($request->question_id);
+        $examQuestion = ExamQuestion::where('exam_id', $request->exam_id)
+            ->where('question_id', $request->question_id)
+            ->first();
+
+        if ($examQuestion->expire_time <= $this->currentTime) {
+            $this->calcExamResult($exam);
+            return $this->sendError('Exam allready completed!', null, 403);
+        }
+
+        $examQuestion->answer = $request->answer;
+        $examQuestion->is_correct = ($question->correct == $request->answer) ? 1 : 0;
+
+        if (!$examQuestion->save())
+            return $this->sendError('Unable to record your answer!', null, 403);
+
+        return $this->sendResponse([
+            'exam_id' => $request->exam_id,
+            'question_id' => $request->question_id,
+            'answer' => $request->answer,
+        ], 'Your answer!');
     }
 
     public function completeExam($exam_id)
     {
-        $now = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
-        $exam = Exam::with('questions', 'theme', 'level')->where('status', ExamStatusEnum::ACTIVE)
+        $exam = Exam::with('questions', 'theme')->where('status', ExamStatusEnum::ACTIVE)
             ->where('user_id', Auth::id())
             ->find($exam_id);
-        if($exam) {
-            $exam->status = ExamStatusEnum::COMPLETED;
-            $exam->expire_time = $now;
-            $exam->correct_answers = ExamQuestion::where('exam_id', $exam_id)->where('is_correct', IsCorrectEnum::CORRECT)->count();
-            $exam->save();
+        if(!$exam)
+            return $this->sendError('Exam is not found!');
 
-            return $this->sendResponse($exam, 'Exam is completed');
-        }
+        $examResult = $this->calcExamResult($exam);
 
-        return $this->sendError('Exam is not found!');
+        return $this->sendResponse($examResult, 'Exam is completed');
+
     }
 
     public function getUserExams()
     {
         if (Exam::where('user_id', Auth::id())->exists()) {
-            $query = Exam::where('user_id', Auth::id())->with('theme', 'level')->paginate(10);
-            $now = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
+            $query = Exam::where('user_id', Auth::id())->with('theme')->paginate(10);
 
-            $exams = $query->getCollection()->transform(function ($exam, $key) use ($now) {
-                $exam->status = ($exam->expire_time > $now) ? 'active': 'completed';
+            $exams = $query->getCollection()->transform(function ($exam) {
+                $exam->status = ($exam->expire_time <= $this->currentTime) ? 'active': 'completed';
                 return $exam;
             });
 
@@ -194,117 +137,27 @@ class ExamController extends BaseController
 
     public function getExamResult($exam_id)
     {
-        $now = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
-        $exam = Exam::with('questions', 'theme', 'level')->where('user_id', Auth::id())->find($exam_id);
+        $exam = Exam::where('user_id', Auth::id())->find($exam_id);
 
-        if ($exam) {
-            if($exam->expire_time > $now) {
-                return $this->sendError('Exam is not completed yet', null, 403);
-            }
-            $exam->status = 'completed';
-            $exam->correct_answer_count=0;
-            foreach ($exam->questions as $question) {
-                if ($question->correct == $question->answer) {
-                    $exam->correct_answer_count++;
-                }
-            }
+        if ($exam)
+            return $this->sendError('Exam is not found!');
 
-            return $this->sendResponse($exam, 'Exam is completed');
-        }
+        if($exam->expire_time >= $this->currentTime)
+            return $this->sendError('Exam is not completed yet', null, 403);
 
-        return $this->sendError('Exam is not found!');
+        $exam->load('questionsWithCorrect', 'theme');
+
+        return $this->sendResponse($exam, 'Exam is completed');
     }
 
-    // private function setExamQuestions($score, $exam) {
-    //     $keyWords = [KeyWord::all()->random()->id];
+    public function getExamQuestions($exam_id) {
+        $exam = Exam::with('questions', 'theme')->where('status', ExamStatusEnum::ACTIVE)
+            ->where('user_id', Auth::id())
+            ->find($exam_id);
+        if(!$exam)
+            return $this->sendError('Exam is not found!');
 
-    //     $hasImageQuestions = Question::where('theme_id', $score->theme_id)
-    //         ->where('level_id', $exam->level_id)
-    //         ->whereHas('keyWords', function ($q) use ($keyWords) {
-    //             $q->whereIn('key_word_id', $keyWords);
-    //         })
-    //         ->where('has_image', 1)
-    //         ->inRandomOrder()
-    //         ->limit($exam->level->has_image_count)
-    //         ->get();
-
-    //     foreach ($hasImageQuestions as $question) {
-    //         ExamQuestion::create([
-    //             'exam_id' => $exam->id,
-    //             'question_id' => $question->id,
-    //         ]);
-    //     }
-
-    //     $simpleQuestions = Question::where('theme_id', $score->theme_id)
-    //         ->where('level_id', $exam->level_id)
-    //         ->whereHas('keyWords', function ($q) use ($keyWords) {
-    //             $q->whereIn('key_word_id', $keyWords);
-    //         })
-    //         ->where('has_image', 0)
-    //         ->inRandomOrder()
-    //         ->limit($exam->level->simple_question_count)
-    //         ->get();
-
-    //     foreach ($simpleQuestions as $question) {
-    //         ExamQuestion::create([
-    //             'exam_id' => $exam->id,
-    //             'question_id' => $question->id,
-    //         ]);
-    //     }
-
-    // }
-
-    private function setExamQuestions($exam) {
-        $levels = Level::all();
-        $startDate = strtotime($score->start_time);
-        foreach ($levels as $level) {
-            $keyWords = [KeyWord::all()->random()->id];
-
-            $simpleQuestions = Question::where('theme_id', $exam->theme_id)
-                ->where('level_id', $level->id)
-                ->whereHas('keyWords', function ($q) use ($keyWords) {
-                    $q->whereIn('key_word_id', $keyWords);
-                })
-                ->where('has_image', 0)
-                ->inRandomOrder()
-                ->limit($level->simple_question_count)
-                ->get();
-
-            foreach ($simpleQuestions as $question) {
-                ExamQuestion::create([
-                    'exam_id' => $exam->id,
-                    'level_id' => $level->id,
-                    'question_id' => $question->id,
-                    'start_time' => date('Y-m-d H:i:s', $startDate),
-                    'expire_time' => date('Y-m-d H:i:s', $startDate + $this->questionDuration),
-                ]);
-                $startDate += $this->questionDuration;
-            }
-
-            $hasImageQuestions = Question::where('theme_id', $exam->theme_id)
-                ->where('level_id', $level_id)
-                ->whereHas('keyWords', function ($q) use ($keyWords) {
-                    $q->whereIn('key_word_id', $keyWords);
-                })
-                ->where('has_image', 1)
-                ->inRandomOrder()
-                ->limit($level->has_image_count)
-                ->get();
-
-            foreach ($hasImageQuestions as $question) {
-                ExamQuestion::create([
-                    'exam_id' => $exam->id,
-                    'level_id' => $level->id,
-                    'question_id' => $question->id,
-                    'start_time' => date('Y-m-d H:i:s', $startDate),
-                    'expire_time' => date('Y-m-d H:i:s', $startDate + $this->questionDuration),
-                ]);
-                $startDate += $this->questionDuration;
-            }
-        }
-        $exam->expire_time = date('Y-m-d H:i:s', $startDate);
-        $exam->save();
+        return $this->sendResponse($exam);
 
     }
-
 }

@@ -57,21 +57,21 @@ Route::prefix('v1')->group(function () {
             Route::get('level/get-levels', [LevelController::class, 'getLevels']);
 
             Route::group(['prefix' => 'exam'], function () {
+                Route::get('get-user-exams', [ExamController::class, 'getUserExams']);
+
+                Route::get('get-exam-questions/{exam_id}', [ExamController::class, 'getExamQuestions']);
+
+                Route::get('get-next-question/{exam_id}', [ExamController::class, 'getNextQuestion']);
 
                 Route::post('start-exam', [ExamController::class, 'startExam']);
-
-                // Route::post('get-question-list', [ScoreController::class, 'getQuestionList']);
-                // Route::post('get-next-question', [ScoreController::class, 'getNextQuestion']);
-                // Route::get('get-user-exams', [ScoreController::class, 'getUserExams']);
 
                 Route::post('set-answer', [ExamController::class, 'setAnswer']);
 
                 Route::post('complete-exam/{exam_id}', [ExamController::class, 'completeExam']);
 
-                Route::get('get-user-exams', [ExamController::class, 'getUserExams']);
-
                 Route::get('get-exam-result/{exam_id}', [ExamController::class, 'getExamResult']);
 
+                // Route::get('get-user-exams', [ScoreController::class, 'getUserExams']);
             });
 
         });
