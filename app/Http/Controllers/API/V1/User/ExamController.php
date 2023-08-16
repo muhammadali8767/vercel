@@ -5,6 +5,8 @@ namespace App\Http\Controllers\API\V1\User;
 use App\Enums\ExamStatusEnum;
 use App\Enums\IsCorrectEnum;
 use App\Http\Controllers\API\V1\BaseController;
+use App\Http\Requests\User\Exam\SetAnswerRequest;
+use App\Http\Services\ExamService;
 use App\Models\Exam;
 use App\Models\KeyWord;
 use App\Models\Level;
@@ -22,9 +24,11 @@ class ExamController extends BaseController
     protected $questionDuration = 60;
     protected $extraTime = 30;
     protected $currentTime;
+    protected $examService;
 
-    public function __construct() {
+    public function __construct(ExamService $examService) {
         $this->currentTime = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
+        $this->examService = $examService;
     }
 
     public function startExam(Request $request)
@@ -50,35 +54,18 @@ class ExamController extends BaseController
             'start_time' => $this->currentTime,
         ]);
 
-        $this->setExamQuestions($exam);
+        $this->examService->setExamQuestions($exam);
 
         return $this->sendResponse($exam->load('questions', 'theme'), 'Exam is started!');
     }
 
-    public function setAnswer(Request $request)
+    public function setAnswer(SetAnswerRequest $request)
     {
-        $validator = Validator::make($request->all(), [
-            'exam_id' => 'required|numeric|exists:exams,id',
-            'question_id' => 'required|numeric|exists:questions,id',
-            'answer' => [
-                'required','string', Rule::in(['a', 'b', 'c', 'd']),
-            ],
-        ]);
-
-        if($validator->fails()){
-            return $this->sendError($validator->errors());
-        }
-
-        $user_id = Auth::id();
-        $exam = Exam::where('user_id', $user_id)
-            ->where('id', $request->exam_id)
-            ->first();
-
-        if (!$exam)
+        if (!$exam = $this->examService->getUserExamWithQuestion($request->exam_id))
             return $this->sendError('Exam not found!', null, 422);
 
         if ($exam->expire_time <= $this->currentTime) {
-            $this->calcExamResult($exam);
+            $this->examService->calcExamResult($exam);
             return $this->sendError('Exam allready completed!', null, 403);
         }
 
@@ -88,7 +75,7 @@ class ExamController extends BaseController
             ->first();
 
         if ($examQuestion->expire_time <= $this->currentTime) {
-            $this->calcExamResult($exam);
+            $this->examService->calcExamResult($exam);
             return $this->sendError('Exam allready completed!', null, 403);
         }
 
@@ -107,13 +94,14 @@ class ExamController extends BaseController
 
     public function completeExam($exam_id)
     {
-        $exam = Exam::with('questions', 'theme')->where('status', ExamStatusEnum::ACTIVE)
+        $exam = Exam::with('questions', 'theme')
+            ->where('status', ExamStatusEnum::ACTIVE)
             ->where('user_id', Auth::id())
             ->find($exam_id);
         if(!$exam)
             return $this->sendError('Exam is not found!');
 
-        $examResult = $this->calcExamResult($exam);
+        $examResult = $this->examService->calcExamResult($exam);
 
         return $this->sendResponse($examResult, 'Exam is completed');
 
@@ -151,7 +139,8 @@ class ExamController extends BaseController
     }
 
     public function getExamQuestions($exam_id) {
-        $exam = Exam::with('questions', 'theme')->where('status', ExamStatusEnum::ACTIVE)
+        $exam = Exam::with('questions', 'theme')
+            ->where('status', ExamStatusEnum::ACTIVE)
             ->where('user_id', Auth::id())
             ->find($exam_id);
         if(!$exam)

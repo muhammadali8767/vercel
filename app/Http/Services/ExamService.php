@@ -4,14 +4,26 @@ namespace App\Http\Services;
 
 use App\Enums\ExamStatusEnum;
 use App\Enums\IsCorrectEnum;
+use App\Http\Repositories\ExamRepository;
+use App\Models\Exam;
 use App\Models\ExamQuestion;
 use App\Models\KeyWord;
 use App\Models\Level;
 use App\Models\Question;
+use Illuminate\Support\Facades\Auth;
 
 class ExamService implements BaseService
 {
+    private $examRepository;
 
+    public function __construct (ExamRepository $examRepository) {
+        $this->examRepository = $examRepository;
+    }
+
+    public function getActiveExamById($exam_id) {
+        $exam = $this->examRepository->getActiveExamById($exam_id);
+        return $exam;
+    }
     public function setExamQuestions($exam) {
         $levels = Level::all();
         foreach ($levels as $level) {
@@ -72,5 +84,9 @@ class ExamService implements BaseService
 
         $exam->load('questionsWithCorrect', 'theme');
         return $exam;
+    }
+
+    public function getUserExamWithQuestion($exam_id,$question_id) {
+        return $this->examRepository->getUserExamWithQuestion($exam_id, $question_id);
     }
 }
