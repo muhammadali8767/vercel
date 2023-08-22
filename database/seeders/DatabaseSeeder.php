@@ -38,8 +38,8 @@ class DatabaseSeeder extends Seeder
         Level::factory()->create(['name' => '5 - level', 'simple_question_count' => 5, 'has_image_count' => 5]);
 
         KeyUsage::factory()->create(['usage_type' => "-"]);
-        KeyUsage::factory()->create(['usage_type' => "Podskazkani ko'rish"]);
-        KeyUsage::factory()->create(['usage_type' => "30 sekund qo'shish"]);
+        KeyUsage::factory()->create(['usage_type' => "Javobga yordam"]);
+        KeyUsage::factory()->create(['usage_type' => "Qo'shimcha vaqt"]);
 
         KeyWord::factory(20)->create();
 
