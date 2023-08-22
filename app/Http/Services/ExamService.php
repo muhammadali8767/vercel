@@ -10,14 +10,18 @@ use App\Models\ExamQuestion;
 use App\Models\KeyWord;
 use App\Models\Level;
 use App\Models\Question;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 
 class ExamService implements BaseService
 {
     private $examRepository;
+    private $currentTime;
 
     public function __construct (ExamRepository $examRepository) {
         $this->examRepository = $examRepository;
+        $this->currentTime = Carbon::now()->setTimezone('Asia/Tashkent')->format('Y-m-d H:i:s');
+
     }
 
     public function getActiveExamById($exam_id) {
@@ -73,20 +77,23 @@ class ExamService implements BaseService
             'key_usage' => 1,
         ]);
     }
-    public function calcExamResult($exam) {
+    public function completeExam($exam) {
         $exam->status = ExamStatusEnum::COMPLETED;
         $exam->expire_time = $this->currentTime;
-        $exam->correct_answers = ExamQuestion::where('exam_id', $exam->id)
-            ->where('is_correct', IsCorrectEnum::CORRECT)
-            ->count();
-
+        $exam->correct_answers = $this->examRepository->getCorrectAnswers($exam->id);
         $exam->save();
-
         $exam->load('questionsWithCorrect', 'theme');
         return $exam;
     }
 
     public function getUserExamWithQuestion($exam_id,$question_id) {
         return $this->examRepository->getUserExamWithQuestion($exam_id, $question_id);
+    }
+
+    public function getActiveExams() {
+        return $this->examRepository->getActiveExams();
+    }
+    public function getExamResult($exam_id) {
+        return $this->examRepository->getExamResult($exam_id);
     }
 }

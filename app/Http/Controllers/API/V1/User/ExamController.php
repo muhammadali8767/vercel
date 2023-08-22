@@ -44,6 +44,7 @@ class ExamController extends BaseController
         $user_id = Auth::id();
 
         if (Exam::where('theme_id', $request->theme_id)
+            ->where('status', ExamStatusEnum::ACTIVE)
             ->where('expire_time', '>', $this->currentTime)
             ->exists())
             return $this->sendError('Your exam is not completed yet!', 422);
@@ -64,8 +65,8 @@ class ExamController extends BaseController
         if (!$exam = $this->examService->getUserExamWithQuestion($request->exam_id))
             return $this->sendError('Exam not found!', null, 422);
 
-        if ($exam->expire_time <= $this->currentTime) {
-            $this->examService->calcExamResult($exam);
+        if ($exam->expire_time >= $this->currentTime) {
+            $this->examService->completeExam($exam);
             return $this->sendError('Exam allready completed!', null, 403);
         }
 
@@ -75,7 +76,7 @@ class ExamController extends BaseController
             ->first();
 
         if ($examQuestion->expire_time <= $this->currentTime) {
-            $this->examService->calcExamResult($exam);
+            $this->examService->completeExam($exam);
             return $this->sendError('Exam allready completed!', null, 403);
         }
 
@@ -101,7 +102,7 @@ class ExamController extends BaseController
         if(!$exam)
             return $this->sendError('Exam is not found!');
 
-        $examResult = $this->examService->calcExamResult($exam);
+        $examResult = $this->examService->completeExam($exam);
 
         return $this->sendResponse($examResult, 'Exam is completed');
 
@@ -113,7 +114,7 @@ class ExamController extends BaseController
             $query = Exam::where('user_id', Auth::id())->with('theme')->paginate(10);
 
             $exams = $query->getCollection()->transform(function ($exam) {
-                $exam->status = ($exam->expire_time <= $this->currentTime) ? 'active': 'completed';
+                $exam->status = ($exam->expire_time >= $this->currentTime) ? 'active': 'completed';
                 return $exam;
             });
 
@@ -130,7 +131,7 @@ class ExamController extends BaseController
         if ($exam)
             return $this->sendError('Exam is not found!');
 
-        if($exam->expire_time >= $this->currentTime)
+        if($exam->expire_time <= $this->currentTime)
             return $this->sendError('Exam is not completed yet', null, 403);
 
         $exam->load('questionsWithCorrect', 'theme');
