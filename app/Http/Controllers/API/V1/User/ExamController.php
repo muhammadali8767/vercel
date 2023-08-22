@@ -21,8 +21,6 @@ use Illuminate\Validation\Rule;
 
 class ExamController extends BaseController
 {
-    protected $questionDuration = 60;
-    protected $extraTime = 30;
     protected $currentTime;
     protected $examService;
 
@@ -43,17 +41,10 @@ class ExamController extends BaseController
 
         $user_id = Auth::id();
 
-        if (Exam::where('theme_id', $request->theme_id)
-            ->where('status', ExamStatusEnum::ACTIVE)
-            ->where('expire_time', '>', $this->currentTime)
-            ->exists())
+        if ($this->examService->checkUserActiveExamExists($user_id))
             return $this->sendError('Your exam is not completed yet!', 422);
 
-        $exam = Exam::create([
-            'user_id' => $user_id,
-            'theme_id' => $request->theme_id,
-            'start_time' => $this->currentTime,
-        ]);
+        $exam = $this->examService->createExam($user_id, $request->theme_id);
 
         $this->examService->setExamQuestions($exam);
 

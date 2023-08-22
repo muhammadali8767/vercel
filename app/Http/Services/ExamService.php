@@ -28,6 +28,19 @@ class ExamService implements BaseService
         $exam = $this->examRepository->getActiveExamById($exam_id);
         return $exam;
     }
+    public function checkUserActiveExamExists($user_id) {
+        return Exam::where('user_id', $user_id)
+            ->where('status', ExamStatusEnum::ACTIVE)
+            ->where('expire_time', '>', $this->currentTime)
+            ->exists();
+    }
+    public function createExam($user_id, $theme_id) {
+        return Exam::create([
+            'user_id' => $user_id,
+            'theme_id' => $theme_id,
+            'start_time' => $this->currentTime,
+        ]);
+    }
     public function setExamQuestions($exam) {
         $levels = Level::all();
         foreach ($levels as $level) {
