@@ -15,7 +15,13 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+         $schedule->command('exam:complete-expired')
+            ->everyMinute()
+            ->appendOutputTo(storage_path('logs/inspire.log'))
+//            ->onFailureWithOutput(function ($error) {
+//                dump($error);
+//            })
+         ;
     }
 
     /**
