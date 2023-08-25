@@ -16,6 +16,14 @@ class ExamQuestion extends Model
 
     public function question()
     {
-        return $this->belongsTo(Question::class);
+        return $this->belongsTo(Question::class)->select('id', 'question', 'a','b','c','d','has_image','image');
+    }
+    public function level()
+    {
+        return $this->belongsTo(Level::class)->select('id', 'name');
+    }
+    public function keyUsage()
+    {
+        return $this->belongsTo(KeyUsage::class, 'key_usage')->select('id', 'usage_type');
     }
 }

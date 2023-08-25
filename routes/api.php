@@ -59,7 +59,7 @@ Route::prefix('v1')->group(function () {
             Route::group(['prefix' => 'exam'], function () {
                 Route::get('get-user-exams', [ExamController::class, 'getUserExams']);
 
-                Route::get('get-exam-questions/{exam_id}', [ExamController::class, 'getExamQuestions']);
+//                Route::get('get-exam-questions/{exam_id}', [ExamController::class, 'getExamQuestions']);
 
                 Route::get('get-next-question/{exam_id}', [ExamController::class, 'getNextQuestion']);
 

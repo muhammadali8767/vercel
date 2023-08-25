@@ -28,19 +28,22 @@ class ExamService implements BaseService
         $exam = $this->examRepository->getActiveExamById($exam_id);
         return $exam;
     }
-    public function checkUserActiveExamExists($user_id) {
-        return Exam::where('user_id', $user_id)
+
+    public function checkUserActiveExamExists() {
+        return Exam::where('user_id', Auth::id())
             ->where('status', ExamStatusEnum::ACTIVE)
             ->where('expire_time', '>', $this->currentTime)
             ->exists();
     }
-    public function createExam($user_id, $theme_id) {
+
+    public function createExam($theme_id) {
         return Exam::create([
-            'user_id' => $user_id,
+            'user_id' => Auth::id(),
             'theme_id' => $theme_id,
             'start_time' => $this->currentTime,
         ]);
     }
+
     public function setExamQuestions($exam) {
         $levels = Level::all();
         foreach ($levels as $level) {
@@ -83,13 +86,29 @@ class ExamService implements BaseService
     }
 
     public function assignQuestion($exam, $level, $question) {
-        ExamQuestion::create([
-            'exam_id' => $exam->id,
-            'level_id' => $level->id,
-            'question_id' => $question->id,
-            'key_usage' => 1,
-        ]);
+        if (ExamQuestion::where('exam_id', $exam->id)->exists())
+            ExamQuestion::create([
+                'exam_id' => $exam->id,
+                'level_id' => $level->id,
+                'question_id' => $question->id,
+                'key_usage' => 1,
+            ]);
+        else {
+            ExamQuestion::create([
+                'exam_id' => $exam->id,
+                'level_id' => $level->id,
+                'question_id' => $question->id,
+                'key_usage' => 1,
+                'start_time' => $exam->start_time,
+                'expire_time' => Carbon::parse($exam->start_time)->addSeconds(env('QUESTION_DURATION'))->format('Y-m-d H:i:s'),
+            ]);
+        }
     }
+
+    public function getNextQuestion($exam_id) {
+        return $this->examRepository->getNextQuestion($exam_id);
+    }
+
     public function completeExam($exam) {
         $exam->status = ExamStatusEnum::COMPLETED;
         $exam->expire_time = $this->currentTime;
@@ -103,9 +122,14 @@ class ExamService implements BaseService
         return $this->examRepository->getUserExamWithQuestion($exam_id, $question_id);
     }
 
+    public function getUserExams() {
+        return $this->examRepository->getUserExams($this->currentTime);
+    }
+
     public function getActiveExams() {
         return $this->examRepository->getActiveExams();
     }
+
     public function getExamResult($exam_id) {
         return $this->examRepository->getExamResult($exam_id);
     }

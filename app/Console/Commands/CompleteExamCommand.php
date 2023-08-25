@@ -23,13 +23,15 @@ class CompleteExamCommand extends Command
         $activeExams = $this->examService->getActiveExams();
         foreach ($activeExams as $exam) {
             foreach ($exam->questionsForChecking as $question) {
-                if (
-                    !$question->answer
-                    && $question->expire_time
-                    && $question->expire_time < now()->format('Y-m-d HH:i:s')
-                ) {
-                    dump($this->examService->completeExam($exam));
-                }
+                dump("QUESTION: $question->id | ANSWER: ". !$question->answer . " | START_TIME: $question->start_time | EXPIRE_TIME: $question->expire_time | EXPIRED: " . strval($question->expire_time >= now()->format('Y-m-d HH:i:s')));
+//                dump("QUESTION: $question->id | ANSWER: ". !$question->answer . " | START_TIME: $question->start_time | EXPIRE_TIME: $question->expire_time | EXPIRED: ". $question->expire_time >= now()->format('Y-m-d HH:i:s'));
+//                if (
+//                    !$question->answer
+//                    && $question->expire_time
+//                    && $question->expire_time < now()->format('Y-m-d HH:i:s')
+//                ) {
+//                    dump($this->examService->completeExam($exam));
+//                }
             }
         }
 

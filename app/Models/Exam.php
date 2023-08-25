@@ -23,6 +23,12 @@ class Exam extends Model
             ->orderBy('exam_questions.id')
         ;
     }
+    public function first_question() {
+        return $this->questions()->take(1);
+    }
+    public function next_question() {
+        return $this->questions()->whereNull('answer')->take(1);
+    }
 
     public function questionsForChecking()
     {
